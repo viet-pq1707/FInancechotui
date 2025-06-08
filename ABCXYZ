@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Công cụ Quản lý Quỹ Super Cá Nhân (Thêm 100 USD Cash)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .card-shadow {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .instruction-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .instruction-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 1000; 
+            left: 0;
+            top: 0;
+            width: 100%; 
+            height: 100%; 
+            overflow: auto; 
+            background-color: rgba(0,0,0,0.5); 
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 10% auto; 
+            padding: 20px;
+            border: 1px solid #888;
+            width: 90%; 
+            max-width: 500px;
+            border-radius: 0.5rem;
+            position: relative;
+        }
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            position: absolute;
+            top: 10px;
+            right: 20px;
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .gemini-explanation {
+            background-color: rgba(51, 65, 85, 0.7); 
+            border-left: 3px solid #38bdf8; 
+            padding: 0.75rem; 
+            margin-top: 0.5rem; 
+            border-radius: 0.375rem; 
+            font-size: 0.875rem; 
+            line-height: 1.25rem;
+            color: #e2e8f0; 
+        }
+        .loading-spinner {
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #3498db;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .tab-button {
+            padding: 0.75rem 0.6rem; 
+            font-weight: 600; 
+            font-size: 0.8rem; 
+            color: #94a3b8; 
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+            white-space: nowrap; 
+        }
+        .tab-button.active {
+            color: #38bdf8; 
+            border-bottom-color: #38bdf8; 
+        }
+        .tab-button:hover {
+            color: #7dd3fc; 
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .asset-card {
+            background-color: rgba(51, 65, 85, 0.5); 
+            padding: 1.5rem; 
+            border-radius: 0.5rem; 
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); 
+        }
+        .input-group {
+            margin-bottom: 1rem;
+        }
+        .input-group label {
+            display: block;
+            color: #cbd5e1; 
+            margin-bottom: 0.5rem;
+        }
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border-radius: 0.375rem; 
+            border: 1px solid #475569; 
+            background-color: #334155; 
+            color: #f1f5f9; 
+        }
+        .asset-detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.3rem 0; 
+        }
+        .asset-detail-label {
+            color: #e2e8f0; 
+        }
+        .asset-detail-value {
+            font-weight: 600; 
+        }
+        .summary-table th, .summary-table td {
+            padding: 0.5rem 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #475569; 
+        }
+        .summary-table th {
+            color: #cbd5e1; 
+        }
+        .expense-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #475569; 
+        }
+        .expense-item:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-900 to-slate-800 text-gray-100 min-h-screen flex flex-col items-center p-4">
+
+    <div class="w-full max-w-4xl bg-slate-800 p-6 sm:p-8 rounded-xl card-shadow">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl sm:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-cyan-300">
+                <i class="fas fa-piggy-bank mr-2"></i>Công cụ Quản lý Quỹ Super Cá Nhân <span class="text-sm align-top text-yellow-400">(AI ✨)</span>
+            </h1>
+        </header>
+
+        <div class="mb-6 border-b border-slate-700">
+            <nav class="flex -mb-px space-x-1 sm:space-x-2 justify-center overflow-x-auto pb-1">
+                <button class="tab-button active" data-tab="allocatorTab">
+                    <i class="fas fa-calculator mr-1 sm:mr-2"></i>Phân bổ
+                </button>
+                <button class="tab-button" data-tab="expensesTab">
+                    <i class="fas fa-receipt mr-1 sm:mr-2"></i>Chi phí
+                </button>
+                <button class="tab-button" data-tab="currentAssetsTab">
+                    <i class="fas fa-wallet mr-1 sm:mr-2"></i>Tài sản
+                </button>
+                <button class="tab-button" data-tab="addFundsTab">
+                    <i class="fas fa-plus-circle mr-1 sm:mr-2"></i>Nạp Tiền
+                </button>
+                <button class="tab-button" data-tab="summaryTab">
+                    <i class="fas fa-file-invoice-dollar mr-1 sm:mr-2"></i>Tổng hợp
+                </button>
+            </nav>
+        </div>
+
+        <!-- Allocator Tab -->
+        <div id="allocatorTab" class="tab-content active">
+            <div class="mb-8 p-6 bg-slate-700/50 rounded-lg card-shadow">
+                <h3 class="text-xl font-semibold text-cyan-300 mb-4 flex items-center"><i class="fas fa-money-bill-wave mr-2"></i>Thu nhập & Tiết kiệm Hàng tháng</h3>
+                <div class="input-group">
+                    <label for="currentSalary">Lương hiện tại (VNĐ):</label>
+                    <input type="number" id="currentSalary" value="10000000" min="0" class="w-full px-4 py-3 rounded-lg border-slate-700 bg-slate-700 text-gray-100 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none transition-all duration-300">
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div class="p-3 bg-slate-700 rounded-md">
+                        <p class="text-slate-300">Tiền tiết kiệm từ lương (50%):</p>
+                        <p id="savingsFromSalary" class="text-yellow-400 font-semibold text-lg"></p>
+                    </div>
+                    <div class="p-3 bg-slate-700 rounded-md">
+                        <p class="text-slate-300">Ngân sách Chi phí hàng tháng (50%):</p>
+                        <p id="estimatedMonthlyExpenses" class="text-orange-400 font-semibold text-lg"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-8">
+                <label for="monthlySavings" class="block text-sm font-medium text-sky-300 mb-2">Số tiền tiết kiệm hàng tháng để phân bổ (VNĐ):</label>
+                <div class="flex">
+                    <input type="number" id="monthlySavings" name="monthlySavings" placeholder="Số tiền từ mục tiết kiệm ở trên" class="w-full px-4 py-3 rounded-l-lg border-slate-700 bg-slate-700 text-gray-100 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none transition-all duration-300" min="0" readonly>
+                    <button id="calculateBtn" class="bg-sky-500 hover:bg-sky-600 text-white font-semibold px-6 py-3 rounded-r-lg transition-colors duration-300 flex items-center">
+                        <i class="fas fa-calculator mr-2"></i>Tính toán Phân bổ
+                    </button>
+                </div>
+                <p id="error-message" class="text-red-400 text-sm mt-2 hidden"></p>
+            </div>
+
+            <div id="results" class="hidden">
+                 <h2 class="text-2xl font-semibold text-sky-400 mb-6 text-center">Kết quả Phân bổ Chi tiết</h2>
+                <div class="mb-8 p-6 bg-slate-700/50 rounded-lg card-shadow">
+                    <h3 class="text-xl font-semibold text-cyan-300 mb-4 flex items-center"><i class="fas fa-coins mr-2"></i>Phân bổ Danh mục Đầu tư</h3>
+                    <div id="allocationDetails" class="space-y-3 text-sm sm:text-base"></div>
+                    <div class="mt-4 pt-4 border-t border-slate-600">
+                        <p class="text-lg font-bold text-gray-100">Tổng cộng Phân bổ: <span id="totalAllocated" class="text-yellow-400"></span> VNĐ</p>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-xl font-semibold text-cyan-300 mb-6 text-center flex items-center justify-center"><i class="fas fa-clipboard-list mr-2"></i>Hướng dẫn Hành động Định kỳ</h3>
+                    <div id="standingInstructions" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="expensesTab" class="tab-content">
+            <h2 class="text-2xl font-semibold text-sky-400 mb-6 text-center">Dự tính Chi phí Cá nhân Hàng tháng</h2>
+            <div class="asset-card">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-semibold text-cyan-300">Các khoản chi tiêu dự kiến:</h3>
+                    <div class="text-right">
+                        <p class="text-slate-300 text-sm">Ngân sách từ lương (50%):</p>
+                        <p id="expenseBudgetFromSalary" class="text-orange-400 font-semibold text-lg"></p>
+                    </div>
+                </div>
+                <div id="expenseList" class="space-y-2 text-sm">
+                    </div>
+                <div class="mt-4 pt-3 border-t border-slate-600">
+                     <div class="expense-item font-semibold">
+                        <span class="text-gray-100">TỔNG CỘNG CHI TIÊU DỰ KIẾN:</span>
+                        <span id="totalEstimatedExpensesDisplay" class="text-yellow-400"></span>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-400 mt-4"><i class="fas fa-info-circle mr-1"></i>Các khoản này là gợi ý, mày có thể điều chỉnh cho phù hợp với thực tế chi tiêu cá nhân. Chi phí nhà và đi chợ hàng ngày đã có ba mẹ lo.</p>
+            </div>
+        </div>
+
+
+        <div id="currentAssetsTab" class="tab-content">
+             <h2 class="text-2xl font-semibold text-sky-400 mb-6 text-center">Tổng quan Tài sản Hiện có cho Quỹ</h2>
+            <div class="space-y-6">
+                <div class="asset-card">
+                    <h3 class="text-xl font-semibold text-cyan-300 mb-3 flex items-center">
+                        <i class="fas fa-university mr-3 text-pink-400"></i>CAKE by VPBank
+                    </h3>
+                    <div class="asset-detail-row">
+                        <span class="asset-detail-label">Tiền mặt (VNĐ):</span>
+                        <span id="currentCakeVND" class="asset-detail-value text-yellow-400 text-lg"></span>
+                    </div>
+                </div>
+                 <div class="asset-card">
+                    <h3 class="text-xl font-semibold text-cyan-300 mb-3 flex items-center">
+                        <i class="fas fa-money-bill-alt mr-3 text-green-400"></i>Tiền mặt USD
+                    </h3>
+                    <div class="asset-detail-row">
+                        <span class="asset-detail-label">Số lượng ($):</span>
+                        <span id="currentUsdCash" class="asset-detail-value text-yellow-400 text-lg"></span>
+                    </div>
+                </div>
+                <div class="asset-card">
+                    <h3 class="text-xl font-semibold text-cyan-300 mb-3 flex items-center">
+                        <i class="fab fa-bitcoin mr-3 text-yellow-400"></i>Binance
+                    </h3>
+                    <div class="space-y-1 text-sm">
+                        <div class="asset-detail-row">
+                            <span class="asset-detail-label">USDT sẵn sàng cho quỹ:</span>
+                            <div><span id="currentBinanceAvailableUSDT" class="asset-detail-value text-green-400"></span> USDT</div>
+                        </div>
+                        <div class="asset-detail-row">
+                            <span class="asset-detail-label">Đầu tư vào TUT:</span>
+                            <div><span id="currentBinanceTutUSDT" class="asset-detail-value text-slate-300"></span> USDT</div>
+                        </div>
+                        <div class="asset-detail-row">
+                            <span class="asset-detail-label">Đầu tư vào Sonic (S):</span>
+                            <div><span id="currentBinanceSonicUSDT" class="asset-detail-value text-slate-300"></span> USDT</div>
+                        </div>
+                        <div class="asset-detail-row">
+                            <span class="asset-detail-label">Đầu tư vào TRUMP:</span>
+                            <div><span id="currentBinanceTrumpUSDT" class="asset-detail-value text-slate-300"></span> USDT</div>
+                        </div>
+                         <div class="asset-detail-row">
+                            <span class="asset-detail-label">DeagentAI (AIA) - *giả định*:</span>
+                            <div><span id="currentBinanceAiaUSDT" class="asset-detail-value text-purple-400"></span> USDT</div>
+                        </div>
+                         <div class="asset-detail-row">
+                            <span class="asset-detail-label">USDT cho Futures:</span>
+                            <div><span id="currentBinanceFuturesUSDT" class="asset-detail-value text-sky-300"></span> USDT</div>
+                        </div>
+                        <hr class="border-slate-600 my-2">
+                        <div class="asset-detail-row">
+                            <span class="asset-detail-label font-medium">Tổng USDT trên Binance:</span>
+                            <div><span id="currentBinanceTotalUSDT" class="asset-detail-value text-yellow-400"></span> USDT</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="asset-card">
+                    <h3 class="text-xl font-semibold text-cyan-300 mb-3 flex items-center">
+                        <i class="fab fa-btc mr-3 text-orange-400"></i>Coinbase Wallet
+                    </h3>
+                    <div class="space-y-1 text-sm">
+                        <div class="asset-detail-row">
+                            <span class="asset-detail-label">Số lượng BTC:</span>
+                            <span id="currentCoinbaseBtcAmount" class="asset-detail-value text-slate-300"></span>
+                        </div>
+                        <div class="asset-detail-row">
+                            <span class="asset-detail-label">Giá trị (USDT - *ước tính*):</span>
+                            <span id="currentCoinbaseBtcValueUSDT" class="asset-detail-value text-yellow-400"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="asset-card">
+                    <h3 class="text-xl font-semibold text-cyan-300 mb-3 flex items-center">
+                        <i class="fas fa-chart-line mr-3 text-green-400"></i>Tài khoản Chứng khoán VCBS
+                    </h3>
+                    <div class="asset-detail-row">
+                        <span class="asset-detail-label">Tiền mặt/Cổ phiếu VN (VNĐ):</span>
+                        <span id="currentVcbsVND" class="asset-detail-value text-yellow-400 text-lg"></span>
+                    </div>
+                </div>
+                <div class="asset-card">
+                    <h3 class="text-xl font-semibold text-cyan-300 mb-3 flex items-center">
+                        <i class="fas fa-plane-departure mr-3 text-blue-400"></i>Tài sản Quốc tế (Chờ đầu tư)
+                    </h3>
+                    <div class="asset-detail-row">
+                        <span class="asset-detail-label">Giá trị (VNĐ):</span>
+                        <span id="currentInternationalPendingVND" class="asset-detail-value text-yellow-400 text-lg"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-8 p-6 bg-slate-700/70 rounded-lg card-shadow">
+                <h3 class="text-xl font-semibold text-cyan-400 mb-3">Tổng Kết & Đánh giá Quỹ Dự Phòng</h3>
+                <div class="space-y-2 text-sm">
+                    <div class="asset-detail-row">
+                        <span class="asset-detail-label">Tổng Balance Hiện tại (Quy đổi):</span>
+                        <span id="totalCurrentBalanceVND" class="font-bold text-xl text-green-400"></span>
+                    </div>
+                     <p class="text-xs text-slate-400 text-right">(Tỷ giá tạm tính: 1 USDT = 25,400 VNĐ; 1 BTC = 105,000 USDT)</p>
+                    <div class="asset-detail-row mt-2">
+                        <span class="asset-detail-label">Đánh giá quỹ dự phòng:</span>
+                        <span id="emergencyFundStatus" class="font-semibold"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="addFundsTab" class="tab-content">
+            <h2 class="text-2xl font-semibold text-sky-400 mb-6 text-center">Nạp Tiền vào Quỹ</h2>
+            <div class="max-w-md mx-auto">
+                <div class="input-group">
+                    <label for="addCakeVND">Số tiền VNĐ nạp vào CAKE by VPBank:</label>
+                    <input type="number" id="addCakeVND" placeholder="Nhập số tiền VNĐ" min="0">
+                </div>
+                <div class="input-group">
+                    <label for="addUsdCash">Số tiền USD tiền mặt nạp thêm:</label>
+                    <input type="number" id="addUsdCash" placeholder="Nhập số tiền USD" min="0">
+                </div>
+                <div class="input-group">
+                    <label for="addBinanceUSDT">Số tiền USDT nạp vào Binance (phần sẵn sàng cho quỹ):</label>
+                    <input type="number" id="addBinanceUSDT" placeholder="Nhập số tiền USDT" min="0" step="0.01">
+                </div>
+                <div class="input-group">
+                    <label for="addVcbsVND">Số tiền VNĐ nạp vào VCBS:</label>
+                    <input type="number" id="addVcbsVND" placeholder="Nhập số tiền VNĐ" min="0">
+                </div>
+                <button id="confirmAddFundsBtn" class="w-full bg-green-500 hover:bg-green-600 text-white font-semibold px-6 py-3 rounded-lg transition-colors duration-300 mt-4 flex items-center justify-center">
+                    <i class="fas fa-check-circle mr-2"></i>Xác nhận Nạp tiền
+                </button>
+                <p id="addFundsStatus" class="text-center text-green-400 mt-3"></p>
+            </div>
+        </div>
+
+        <div id="summaryTab" class="tab-content">
+            <h2 class="text-2xl font-semibold text-sky-400 mb-6 text-center">Tổng hợp Tài sản Đầu tư</h2>
+            <div class="bg-slate-700/50 p-6 rounded-lg card-shadow overflow-x-auto">
+                <table class="w-full summary-table text-sm">
+                    <thead>
+                        <tr>
+                            <th>Hạng mục</th>
+                            <th>Nền tảng</th>
+                            <th>Giá trị</th>
+                            <th>Đơn vị</th>
+                        </tr>
+                    </thead>
+                    <tbody id="investmentSummaryBody"></tbody>
+                </table>
+            </div>
+             <div class="mt-8 p-6 bg-slate-700/70 rounded-lg card-shadow">
+                <h3 class="text-xl font-semibold text-cyan-400 mb-3">Tổng Kết Quỹ</h3>
+                <div class="space-y-2 text-sm">
+                    <div class="asset-detail-row">
+                        <span class="asset-detail-label">Tổng Balance (Quy đổi VNĐ):</span>
+                        <span id="summaryTotalBalanceVND" class="font-bold text-xl text-green-400"></span>
+                    </div>
+                    <p class="text-xs text-slate-400 text-right">(Tỷ giá tạm tính: 1 USDT = 25,400 VNĐ; 1 BTC = 105,000 USDT)</p>
+                    <div class="asset-detail-row mt-2">
+                        <span class="asset-detail-label">Đánh giá quỹ dự phòng:</span>
+                        <span id="summaryEmergencyFundStatus" class="font-semibold"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <footer class="w-full max-w-4xl text-center mt-10 pb-6">
+        <p class="text-xs text-slate-500">
+            <i class="fas fa-exclamation-triangle mr-1 text-yellow-500"></i> **Tuyên bố Miễn trừ Trách nhiệm:** Công cụ này chỉ mang tính chất tham khảo... Các giải thích từ AI cũng chỉ mang tính tham khảo.
+        </p>
+    </footer>
+
+    <div id="alertModal" class="modal">
+        <div class="modal-content bg-slate-800 text-gray-100 p-6 rounded-lg shadow-xl">
+            <span class="close-button" onclick="closeModal()">&times;</span>
+            <p id="modalMessageText" class="text-center text-lg"></p>
+            <div class="mt-6 text-center">
+                <button onclick="closeModal()" class="bg-sky-500 hover:bg-sky-600 text-white font-semibold px-6 py-2 rounded-lg transition-colors duration-300">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const currentSalaryInput = document.getElementById('currentSalary');
+        const savingsFromSalarySpan = document.getElementById('savingsFromSalary');
+        const estimatedMonthlyExpensesSpan = document.getElementById('estimatedMonthlyExpenses'); 
+        const monthlySavingsInput = document.getElementById('monthlySavings'); 
+        const calculateBtn = document.getElementById('calculateBtn');
+        const resultsDiv = document.getElementById('results');
+        const allocationDetailsDiv = document.getElementById('allocationDetails');
+        const totalAllocatedSpan = document.getElementById('totalAllocated');
+        const standingInstructionsDiv = document.getElementById('standingInstructions');
+        const errorMessageP = document.getElementById('error-message');
+        const alertModal = document.getElementById('alertModal');
+        const modalMessageText = document.getElementById('modalMessageText');
+
+        const expenseBudgetFromSalarySpan = document.getElementById('expenseBudgetFromSalary');
+        const expenseListDiv = document.getElementById('expenseList');
+        const totalEstimatedExpensesDisplaySpan = document.getElementById('totalEstimatedExpensesDisplay'); 
+
+        const currentCakeVNDSpan = document.getElementById('currentCakeVND');
+        const currentUsdCashSpan = document.getElementById('currentUsdCash');
+        const currentBinanceAvailableUSDTSpan = document.getElementById('currentBinanceAvailableUSDT');
+        const currentBinanceTutUSDTSpan = document.getElementById('currentBinanceTutUSDT');
+        const currentBinanceSonicUSDTSpan = document.getElementById('currentBinanceSonicUSDT');
+        const currentBinanceTrumpUSDTSpan = document.getElementById('currentBinanceTrumpUSDT');
+        const currentBinanceAiaUSDTSpan = document.getElementById('currentBinanceAiaUSDT');
+        const currentBinanceFuturesUSDTSpan = document.getElementById('currentBinanceFuturesUSDT');
+        const currentBinanceTotalUSDTSpan = document.getElementById('currentBinanceTotalUSDT');
+        const currentCoinbaseBtcAmountSpan = document.getElementById('currentCoinbaseBtcAmount');
+        const currentCoinbaseBtcValueUSDTSpan = document.getElementById('currentCoinbaseBtcValueUSDT');
+        const currentVcbsVNDSpan = document.getElementById('currentVcbsVND');
+        const currentInternationalPendingVNDSpan = document.getElementById('currentInternationalPendingVND');
+        const totalCurrentBalanceVNDSpan = document.getElementById('totalCurrentBalanceVND');
+        const emergencyFundStatusSpan = document.getElementById('emergencyFundStatus');
+
+        const addCakeVNDInput = document.getElementById('addCakeVND');
+        const addUsdCashInput = document.getElementById('addUsdCash');
+        const addBinanceUSDTInput = document.getElementById('addBinanceUSDT');
+        const addVcbsVNDInput = document.getElementById('addVcbsVND');
+        const confirmAddFundsBtn = document.getElementById('confirmAddFundsBtn');
+        const addFundsStatusP = document.getElementById('addFundsStatus');
+
+        const investmentSummaryBody = document.getElementById('investmentSummaryBody');
+        const summaryTotalBalanceVNDSpan = document.getElementById('summaryTotalBalanceVND');
+        const summaryEmergencyFundStatusSpan = document.getElementById('summaryEmergencyFundStatus');
+
+        let currentAssets = {
+            cakeVND: 25000000,
+            usdCash: 100,
+            binanceUSDT: { available: 135, tut: 20, sonic: 20, trump: 10, aia: 3760, futures: 73 },
+            coinbase: { btc: 0.000809 },
+            vcbsVND: 500000,
+            internationalStocksPendingVND: 0,
+        };
+
+        const USD_TO_VND_RATE = 25400; 
+        const BTC_TO_USDT_RATE = 105000;
+        const AIA_TO_USDT_RATE = 0.5; 
+        let MONTHLY_EXPENSES_BUDGET = 5000000; 
+        const EMERGENCY_FUND_MONTHS_THRESHOLD = 6;
+
+        let suggestedExpenses = [
+            { category: "Đi lại (Xăng xe, Grap/Gojek)", amount: 700000, isFixed: true },
+            { category: "Chăm sóc cá nhân (Cắt tóc)", amount: 100000, isFixed: true },
+            { category: "Hiếu hỉ, Quà tặng", amount: 200000, isFixed: true },
+            { category: "Điện thoại & Internet (ước tính)", amount: 200000, isFixed: true },
+            { category: "Subscription: Telegram Premium (hàng tháng)", amount: 47000, isFixed: true }, 
+            { category: "Subscription: MoneyKeeper App (hàng tháng)", amount: 12500, isFixed: true }, 
+            { category: "Subscription: Truecaller Premium (hàng tháng)", amount: 22000, isFixed: true }, 
+            { category: "Subscription: Google One (hàng tháng)", amount: 500000, isFixed: true },
+            { category: "Subscription: YouTube Premium (hàng tháng)", amount: 50000, isFixed: true },
+            { category: "Linh tinh, Dự phòng nhỏ", amount: 500000, isFixed: true },
+            { category: "Tiền Ra Ngoài (Ăn uống, Giải trí, Sở thích)", amount: 0, isFixed: false } 
+        ];
+
+
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                const targetTab = button.getAttribute('data-tab');
+                tabContents.forEach(content => {
+                    content.classList.remove('active');
+                    if (content.id === targetTab) {
+                        content.classList.add('active');
+                    }
+                });
+                if (targetTab === 'summaryTab') updateInvestmentSummaryDisplay();
+                if (targetTab === 'expensesTab') updateExpensesDisplay(); 
+            });
+        });
+
+        function showAlert(message) { modalMessageText.textContent = message; alertModal.style.display = "block"; }
+        function closeModal() { alertModal.style.display = "none"; }
+        window.onclick = function(event) { if (event.target == alertModal) closeModal(); }
+
+        const allocationConfig = {
+            vnStocks: { total: 0.55, vcbfMGF: 0.25, etfOrIndividual: 0.30 },
+            internationalStocks: 0.25, 
+            crypto: { total: 0.20, btc: 0.10, eth: 0.10 }
+        };
+
+        function formatCurrency(amount, currency = 'VND') {
+            if (currency === 'USD' || currency === 'USDT' || currency === 'BTC') {
+                 let options = (currency === 'BTC') ? 
+                    { minimumFractionDigits: 6, maximumFractionDigits: 8 } : 
+                    { minimumFractionDigits: 2, maximumFractionDigits: 2 };
+                 return new Intl.NumberFormat('en-US', options).format(amount);
+            }
+            return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+        }
+
+        function updateSalaryAndSavings() {
+            const salary = parseFloat(currentSalaryInput.value) || 0;
+            const savings = salary * 0.5;
+            const expensesBudget = salary * 0.5; 
+            MONTHLY_EXPENSES_BUDGET = expensesBudget; 
+
+            savingsFromSalarySpan.textContent = formatCurrency(savings);
+            estimatedMonthlyExpensesSpan.textContent = formatCurrency(expensesBudget); 
+            monthlySavingsInput.value = savings; 
+
+            expenseBudgetFromSalarySpan.textContent = formatCurrency(expensesBudget); 
+            updateExpensesDisplay(); 
+            calculateAndDisplayTotals(); 
+            if (document.getElementById('summaryTab').classList.contains('active')) {
+                 calculateAndDisplayTotals(true); 
+            }
+        }
+        
+        currentSalaryInput.addEventListener('input', updateSalaryAndSavings);
+
+        function updateExpensesDisplay() {
+            expenseListDiv.innerHTML = '';
+            let sumOfTrulyFixedExpenses = 0; 
+            
+            suggestedExpenses.forEach(exp => {
+                if (exp.isFixed) {
+                    sumOfTrulyFixedExpenses += exp.amount;
+                }
+            });
+
+            const remainingForGoingOut = MONTHLY_EXPENSES_BUDGET - sumOfTrulyFixedExpenses;
+            
+            let totalCalculatedExpenses = 0;
+            suggestedExpenses.forEach(exp => {
+                let currentAmount = exp.amount;
+                if (exp.category === "Tiền Ra Ngoài (Ăn uống, Giải trí, Sở thích)") {
+                    currentAmount = remainingForGoingOut > 0 ? remainingForGoingOut : 0; 
+                }
+                
+                expenseListDiv.innerHTML += `
+                    <div class="expense-item">
+                        <span>${exp.category}:</span>
+                        <span class="text-yellow-300">${formatCurrency(currentAmount)}</span>
+                    </div>
+                `;
+                totalCalculatedExpenses += currentAmount;
+            });
+            totalEstimatedExpensesDisplaySpan.textContent = formatCurrency(totalCalculatedExpenses);
+            expenseBudgetFromSalarySpan.textContent = formatCurrency(MONTHLY_EXPENSES_BUDGET);
+        }
+
+        function updateCurrentAssetsDisplay() {
+            currentCakeVNDSpan.textContent = formatCurrency(currentAssets.cakeVND);
+            currentUsdCashSpan.textContent = formatCurrency(currentAssets.usdCash, 'USD');
+            currentBinanceAvailableUSDTSpan.textContent = formatCurrency(currentAssets.binanceUSDT.available, 'USDT');
+            currentBinanceTutUSDTSpan.textContent = formatCurrency(currentAssets.binanceUSDT.tut, 'USDT');
+            currentBinanceSonicUSDTSpan.textContent = formatCurrency(currentAssets.binanceUSDT.sonic, 'USDT');
+            currentBinanceTrumpUSDTSpan.textContent = formatCurrency(currentAssets.binanceUSDT.trump, 'USDT');
+            currentBinanceAiaUSDTSpan.textContent = formatCurrency(currentAssets.binanceUSDT.aia * AIA_TO_USDT_RATE, 'USDT');
+            currentBinanceFuturesUSDTSpan.textContent = formatCurrency(currentAssets.binanceUSDT.futures, 'USDT');
+            const totalPlatformBinanceUSDT = Object.entries(currentAssets.binanceUSDT).reduce((sum, [key, val]) => {
+                if (key === 'aia') return sum + (val * AIA_TO_USDT_RATE);
+                return sum + val;
+            }, 0);
+            currentBinanceTotalUSDTSpan.textContent = formatCurrency(totalPlatformBinanceUSDT, 'USDT');
+
+            currentCoinbaseBtcAmountSpan.textContent = formatCurrency(currentAssets.coinbase.btc, 'BTC');
+            currentCoinbaseBtcValueUSDTSpan.textContent = formatCurrency(currentAssets.coinbase.btc * BTC_TO_USDT_RATE, 'USDT');
+
+            currentVcbsVNDSpan.textContent = formatCurrency(currentAssets.vcbsVND);
+            currentInternationalPendingVNDSpan.textContent = formatCurrency(currentAssets.internationalStocksPendingVND);
+            calculateAndDisplayTotals();
+        }
+
+        function calculateAndDisplayTotals(isForSummaryTab = false) {
+            const aiaValueInUSDT = currentAssets.binanceUSDT.aia * AIA_TO_USDT_RATE;
+            const coreFundBinanceUSDT = currentAssets.binanceUSDT.available + currentAssets.binanceUSDT.tut + currentAssets.binanceUSDT.sonic + currentAssets.binanceUSDT.trump + aiaValueInUSDT;
+            const coreFundCoinbaseUSDT = currentAssets.coinbase.btc * BTC_TO_USDT_RATE;
+            const coreFundUsdCash = currentAssets.usdCash;
+            const totalCoreCryptoAndCashUSDT = coreFundBinanceUSDT + coreFundCoinbaseUSDT + coreFundUsdCash;
+
+            const totalPlatformUSDT = totalCoreCryptoAndCashUSDT + currentAssets.binanceUSDT.futures;
+            const totalVNDBalanceForDisplay = currentAssets.cakeVND + currentAssets.vcbsVND + currentAssets.internationalStocksPendingVND + (totalPlatformUSDT * USD_TO_VND_RATE);
+            
+            const totalCoreFundVNDForEmergency = currentAssets.cakeVND + currentAssets.vcbsVND + currentAssets.internationalStocksPendingVND + (totalCoreCryptoAndCashUSDT * USD_TO_VND_RATE);
+            const monthsOfExpenses = MONTHLY_EXPENSES_BUDGET > 0 ? totalCoreFundVNDForEmergency / MONTHLY_EXPENSES_BUDGET : Infinity;
+
+            let statusText = `Đủ chi tiêu trong ${monthsOfExpenses === Infinity ? "N/A" : monthsOfExpenses.toFixed(1)} tháng (với ngân sách chi phí ${formatCurrency(MONTHLY_EXPENSES_BUDGET)}/tháng). `;
+            if (monthsOfExpenses >= EMERGENCY_FUND_MONTHS_THRESHOLD) {
+                statusText += `<span class="text-green-400">Đủ</span> trang trải chi phí nếu thất nghiệp.`;
+            } else {
+                 statusText += `<span class="text-red-400">Chưa đủ</span> trang trải chi phí nếu thất nghiệp (cần ít nhất ${EMERGENCY_FUND_MONTHS_THRESHOLD} tháng).`;
+            }
+
+            if (isForSummaryTab) {
+                summaryTotalBalanceVNDSpan.textContent = formatCurrency(totalVNDBalanceForDisplay);
+                summaryEmergencyFundStatusSpan.innerHTML = statusText;
+            } else {
+                totalCurrentBalanceVNDSpan.textContent = formatCurrency(totalVNDBalanceForDisplay);
+                emergencyFundStatusSpan.innerHTML = statusText;
+            }
+        }
+
+        function updateInvestmentSummaryDisplay() {
+            investmentSummaryBody.innerHTML = ''; 
+            investmentSummaryBody.innerHTML += `<tr><td>Tiền mặt</td><td>CAKE by VPBank</td><td>${formatCurrency(currentAssets.cakeVND)}</td><td>VNĐ</td></tr>`;
+            investmentSummaryBody.innerHTML += `<tr><td>Tiền mặt</td><td>Tại nhà</td><td>${formatCurrency(currentAssets.usdCash, 'USD')}</td><td>USD</td></tr>`;
+            investmentSummaryBody.innerHTML += `<tr><td>USDT (Quỹ)</td><td>Binance</td><td>${formatCurrency(currentAssets.binanceUSDT.available, 'USDT')}</td><td>USDT</td></tr>`;
+            investmentSummaryBody.innerHTML += `<tr><td>Đầu tư TUT</td><td>Binance</td><td>${formatCurrency(currentAssets.binanceUSDT.tut, 'USDT')}</td><td>USDT</td></tr>`;
+            investmentSummaryBody.innerHTML += `<tr><td>Đầu tư Sonic (S)</td><td>Binance</td><td>${formatCurrency(currentAssets.binanceUSDT.sonic, 'USDT')}</td><td>USDT</td></tr>`;
+            investmentSummaryBody.innerHTML += `<tr><td>Đầu tư TRUMP</td><td>Binance</td><td>${formatCurrency(currentAssets.binanceUSDT.trump, 'USDT')}</td><td>USDT</td></tr>`;
+            investmentSummaryBody.innerHTML += `<tr><td>DeagentAI (AIA)</td><td>Binance</td><td>${formatCurrency(currentAssets.binanceUSDT.aia * AIA_TO_USDT_RATE, 'USDT')}</td><td>USDT *</td></tr>`;
+            investmentSummaryBody.innerHTML += `<tr><td>USDT (Futures)</td><td>Binance</td><td>${formatCurrency(currentAssets.binanceUSDT.futures, 'USDT')}</td><td>USDT</td></tr>`;
+            investmentSummaryBody.innerHTML += `<tr><td>Bitcoin (BTC)</td><td>Coinbase</td><td>${formatCurrency(currentAssets.coinbase.btc, 'BTC')}</td><td>BTC</td></tr>`;
+            investmentSummaryBody.innerHTML += `<tr><td>Tiền mặt/Cổ phiếu VN</td><td>VCBS</td><td>${formatCurrency(currentAssets.vcbsVND)}</td><td>VNĐ</td></tr>`;
+            investmentSummaryBody.innerHTML += `<tr><td>Tài sản Quốc tế (Chờ đầu tư)</td><td>N/A</td><td>${formatCurrency(currentAssets.internationalStocksPendingVND)}</td><td>VNĐ</td></tr>`;
+            investmentSummaryBody.innerHTML += `<tr><td colspan="4" class="text-xs text-slate-400 pt-2">* Giá trị AIA được giả định theo giá list dự kiến.</td></tr>`;
+            calculateAndDisplayTotals(true);
+        }
+        
+        confirmAddFundsBtn.addEventListener('click', () => {
+            const cakeAmount = parseFloat(addCakeVNDInput.value) || 0;
+            const usdCashAmount = parseFloat(addUsdCashInput.value) || 0;
+            const binanceAmount = parseFloat(addBinanceUSDTInput.value) || 0; 
+            const vcbsAmount = parseFloat(addVcbsVNDInput.value) || 0;
+            let message = "Đã cập nhật: ";
+            let changesMade = false;
+
+            if (cakeAmount > 0) { currentAssets.cakeVND += cakeAmount; message += `CAKE +${formatCurrency(cakeAmount)}; `; changesMade = true; }
+            if (usdCashAmount > 0) { currentAssets.usdCash += usdCashAmount; message += `USD Tiền mặt +${formatCurrency(usdCashAmount, 'USD')}; `; changesMade = true; }
+            if (binanceAmount > 0) { currentAssets.binanceUSDT.available += binanceAmount; message += `Binance (quỹ) +${formatCurrency(binanceAmount, 'USDT')} USDT; `; changesMade = true; }
+            if (vcbsAmount > 0) { currentAssets.vcbsVND += vcbsAmount; message += `VCBS +${formatCurrency(vcbsAmount)}; `; changesMade = true; }
+
+            if (changesMade) {
+                updateCurrentAssetsDisplay();
+                if (document.getElementById('summaryTab').classList.contains('active')) updateInvestmentSummaryDisplay();
+                addFundsStatusP.textContent = message.slice(0, -2) + ".";
+                setTimeout(() => { addFundsStatusP.textContent = ''; }, 3000);
+            } else {
+                addFundsStatusP.textContent = "Chưa nhập số tiền nào để nạp.";
+                setTimeout(() => { addFundsStatusP.textContent = ''; }, 3000);
+            }
+            addCakeVNDInput.value = ''; addUsdCashInput.value = ''; addBinanceUSDTInput.value = ''; addVcbsVNDInput.value = '';
+        });
+
+        function createAllocationItem(iconClass, label, amount, percentage, colorClass = "text-sky-300", assetKey = null, allocatedAmountVND = 0, allocatedAmountUSDT = 0) {
+            let geminiButtonHTML = assetKey ? `<button class="text-xs text-sky-400 hover:text-sky-300 transition-colors duration-200 flex items-center" onclick="fetchExplanation('${assetKey}', this)"><i class="fas fa-magic mr-1"></i> ✨ Hiểu thêm với AI</button>` : '';
+            let addToAssetsButtonHTML = assetKey ? `<button class="text-xs bg-green-500 hover:bg-green-600 text-white font-semibold py-1 px-2 rounded-md transition-colors duration-200 flex items-center ml-auto add-to-assets-btn" data-asset-key="${assetKey}" data-amount-vnd="${allocatedAmountVND}" onclick="addAllocatedToCurrentAssets(this)"><i class="fas fa-plus-circle mr-1"></i> ➕ Cộng vào Tài sản</button>` : '';
+            return `<div class="p-3 bg-slate-700 rounded-md hover:bg-slate-600/70 transition-colors duration-200"><div class="flex justify-between items-center"><div class="flex items-center"><i class="${iconClass} ${colorClass} mr-3 text-lg"></i><span class="text-gray-200">${label}:</span></div><div class="text-right"><span class="font-semibold text-yellow-400">${formatCurrency(amount)}</span><span class="text-xs text-slate-400 block">(${percentage}%)</span></div></div><div class="mt-2 flex justify-between items-center">${geminiButtonHTML}${addToAssetsButtonHTML}</div><div id="loading-${assetKey}" class="text-xs text-slate-400 mt-1 hidden items-center"><div class="loading-spinner"></div> Đang tải...</div><div id="explanation-${assetKey}" class="gemini-explanation mt-1 hidden"></div></div>`;
+        }
+
+        function addAllocatedToCurrentAssets(buttonElement) {
+            const assetKey = buttonElement.getAttribute('data-asset-key');
+            const amountVND = parseFloat(buttonElement.getAttribute('data-amount-vnd'));
+            let message = "";
+            switch (assetKey) {
+                case 'vn_stocks_total': currentAssets.vcbsVND += amountVND; message = `Đã cộng ${formatCurrency(amountVND)} vào VCBS.`; break;
+                case 'international_stocks': currentAssets.internationalStocksPendingVND += amountVND; message = `Đã cộng ${formatCurrency(amountVND)} vào Tài sản Quốc tế.`; break;
+                case 'crypto_total': const cryptoAmountInUSDT = amountVND / USD_TO_VND_RATE; currentAssets.binanceUSDT.available += cryptoAmountInUSDT; message = `Đã cộng ~${formatCurrency(cryptoAmountInUSDT, 'USDT')} USDT vào Binance (quỹ).`; break;
+                default: showAlert("Lỗi: Không xác định loại tài sản."); return;
+            }
+            updateCurrentAssetsDisplay();
+            if (document.getElementById('summaryTab').classList.contains('active')) updateInvestmentSummaryDisplay();
+            showAlert(message);
+            buttonElement.innerHTML = '<i class="fas fa-check mr-1"></i> Đã cộng ✔️';
+            buttonElement.disabled = true;
+            buttonElement.classList.remove('bg-green-500', 'hover:bg-green-600');
+            buttonElement.classList.add('bg-slate-500', 'cursor-not-allowed');
+        }
+        
+        function createInstructionCard(platform, iconClass, title, details, amount) {
+            let amountDisplay = amount > 0 ? `<p class="text-sm text-sky-300 mt-1">Số tiền gợi ý: <span class="font-semibold text-yellow-400">${formatCurrency(amount)}</span></p>` : '';
+            return `<div class="instruction-card bg-slate-700/80 p-5 rounded-lg card-shadow flex flex-col h-full"><div class="flex items-center mb-3"><i class="${iconClass} text-2xl ${platform === 'VCBS' ? 'text-green-400' : platform === 'Binance' ? 'text-yellow-400' : 'text-blue-400'} mr-3"></i><h4 class="text-lg font-semibold text-gray-100">${title}</h4></div><div class="text-xs sm:text-sm text-slate-300 space-y-2 flex-grow">${details}</div>${amountDisplay}</div>`;
+        }
+
+        async function fetchExplanation(assetKey, buttonElement) {
+            const loadingDiv = document.getElementById(`loading-${assetKey}`);
+            const explanationDiv = document.getElementById(`explanation-${assetKey}`);
+            if (explanationDiv.style.display === 'block') { explanationDiv.style.display = 'none'; explanationDiv.innerHTML = ''; buttonElement.innerHTML = '<i class="fas fa-magic mr-1"></i> ✨ Hiểu thêm với AI'; return; }
+            loadingDiv.style.display = 'flex'; explanationDiv.style.display = 'none'; explanationDiv.innerHTML = ''; buttonElement.innerHTML = '<i class="fas fa-times mr-1"></i> Ẩn giải thích';
+            let prompt = "";
+            switch (assetKey) {
+                case 'vn_stocks_total': prompt = "Giải thích ngắn gọn vai trò và tiềm năng của cổ phiếu Việt Nam trong một danh mục đầu tư dài hạn, tập trung 100% vào tài sản tăng trưởng, cho nhà đầu tư cá nhân tại Việt Nam. Văn phong dễ hiểu, tập trung lợi ích, cơ hội."; break;
+                case 'international_stocks': prompt = "Giải thích ngắn gọn vai trò và tiềm năng của cổ phiếu quốc tế (ví dụ: ETFs thị trường Mỹ) trong một danh mục đầu tư dài hạn, 100% tài sản tăng trưởng, cho nhà đầu tư cá nhân tại Việt Nam. Nêu bật lợi ích đa dạng hóa, tiếp cận công ty toàn cầu. Văn phong dễ hiểu."; break;
+                case 'crypto_total': prompt = "Giải thích ngắn gọn vai trò và tiềm năng của tiền điện tử cốt lõi (Bitcoin, Ethereum) trong danh mục đầu tư dài hạn, 100% tài sản tăng trưởng. Nhấn mạnh tiềm năng tăng trưởng đột phá và rủi ro. Cho nhà đầu tư cá nhân Việt Nam, văn phong dễ hiểu."; break;
+                default: loadingDiv.style.display = 'none'; explanationDiv.textContent = "Không tìm thấy loại tài sản."; explanationDiv.style.display = 'block'; buttonElement.innerHTML = '<i class="fas fa-magic mr-1"></i> ✨ Hiểu thêm với AI'; return;
+            }
+            const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+            const apiKey = ""; 
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+            try {
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) { const errorData = await response.json(); throw new Error(`API request failed: ${response.status}. ${errorData?.error?.message || ''}`); }
+                const result = await response.json();
+                if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts) {
+                    explanationDiv.innerHTML = result.candidates[0].content.parts[0].text.replace(/\n/g, '<br>');
+                } else { explanationDiv.textContent = "Không thể nhận giải thích."; }
+            } catch (error) { console.error('Error calling Gemini API:', error); explanationDiv.textContent = `Lỗi gọi AI: ${error.message}.`; } 
+            finally { loadingDiv.style.display = 'none'; explanationDiv.style.display = 'block'; }
+        }
+
+        calculateBtn.addEventListener('click', () => {
+            const savingsToAllocate = parseFloat(monthlySavingsInput.value); 
+            if (isNaN(savingsToAllocate) || savingsToAllocate <= 0) {
+                errorMessageP.textContent = 'Số tiền tiết kiệm để phân bổ không hợp lệ. Kiểm tra lại mục lương.';
+                errorMessageP.classList.remove('hidden');
+                resultsDiv.classList.add('hidden');
+                return;
+            }
+            errorMessageP.classList.add('hidden');
+            resultsDiv.classList.remove('hidden'); 
+            
+            const vcbfMGFSavings = savingsToAllocate * allocationConfig.vnStocks.vcbfMGF;
+            const etfOrIndividualSavings = savingsToAllocate * allocationConfig.vnStocks.etfOrIndividual;
+            const totalVnStocksSavings = savingsToAllocate * allocationConfig.vnStocks.total; 
+            const internationalStocksSavings = savingsToAllocate * allocationConfig.internationalStocks;
+            const btcSavings = savingsToAllocate * allocationConfig.crypto.btc;
+            const ethSavings = savingsToAllocate * allocationConfig.crypto.eth;
+            const totalCryptoSavings = savingsToAllocate * allocationConfig.crypto.total; 
+
+            allocationDetailsDiv.innerHTML = `
+                ${createAllocationItem('fas fa-landmark', 'Tổng Cổ phiếu Việt Nam', totalVnStocksSavings, (allocationConfig.vnStocks.total * 100).toFixed(1), 'text-green-400', 'vn_stocks_total', totalVnStocksSavings, 0)}
+                <div class="ml-6 space-y-2">
+                    ${createAllocationItem('fas fa-seedling', 'Quỹ Mở VCBF (VCBF-MGF)', vcbfMGFSavings, (allocationConfig.vnStocks.vcbfMGF * 100).toFixed(1), 'text-green-300')}
+                    ${createAllocationItem('fas fa-chart-line', 'ETF/Cổ phiếu VN riêng lẻ', etfOrIndividualSavings, (allocationConfig.vnStocks.etfOrIndividual * 100).toFixed(1), 'text-green-300')}
+                </div>
+                ${createAllocationItem('fas fa-globe-americas', 'Cổ phiếu Quốc tế', internationalStocksSavings, (allocationConfig.internationalStocks * 100).toFixed(1), 'text-blue-400', 'international_stocks', internationalStocksSavings, 0)}
+                ${createAllocationItem('fab fa-bitcoin', 'Tổng Tiền điện tử', totalCryptoSavings, (allocationConfig.crypto.total * 100).toFixed(1), 'text-yellow-400', 'crypto_total', totalCryptoSavings, 0)}
+                <div class="ml-6 space-y-2">
+                    ${createAllocationItem('fab fa-btc', 'Bitcoin (BTC)', btcSavings, (allocationConfig.crypto.btc * 100).toFixed(1), 'text-orange-400')}
+                    ${createAllocationItem('fab fa-ethereum', 'Ethereum (ETH)', ethSavings, (allocationConfig.crypto.eth * 100).toFixed(1), 'text-purple-400')}
+                </div>`;
+            totalAllocatedSpan.textContent = formatCurrency(savingsToAllocate);
+            document.querySelectorAll('.add-to-assets-btn').forEach(btn => {
+                btn.innerHTML = '<i class="fas fa-plus-circle mr-1"></i> ➕ Cộng vào Tài sản'; btn.disabled = false;
+                btn.classList.add('bg-green-500', 'hover:bg-green-600'); btn.classList.remove('bg-slate-500', 'cursor-not-allowed');
+            });
+            standingInstructionsDiv.innerHTML = `
+                ${createInstructionCard('VCBS', 'fas fa-university', 'Cổ phiếu Việt Nam (VCBS)', `<p><strong class="text-sky-300">1. Quỹ Mở VCBF:</strong> ${formatCurrency(vcbfMGFSavings)}</p><p><strong class="text-sky-300">2. ETF/Cổ phiếu:</strong> ${formatCurrency(etfOrIndividualSavings)}</p>`, totalVnStocksSavings)}
+                ${createInstructionCard('IBKR', 'fas fa-plane-departure', 'Cổ phiếu Quốc tế', `<p><strong class="text-sky-300">ETF Quốc tế.</strong></p>`, internationalStocksSavings)}
+                ${createInstructionCard('Binance', 'fab fa-xing', 'Tiền điện tử', `<p><strong class="text-sky-300">BTC & ETH:</strong> ${formatCurrency(btcSavings)} BTC, ${formatCurrency(ethSavings)} ETH.</p>`, totalCryptoSavings)}`;
+            if (window.innerWidth < 768) resultsDiv.scrollIntoView({ behavior: 'smooth' });
+        });
+
+        monthlySavingsInput.addEventListener('focus', () => {
+            if (errorMessageP.textContent !== '' || monthlySavingsInput.value === '0') {
+                monthlySavingsInput.value = ''; errorMessageP.classList.add('hidden');
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateSalaryAndSavings(); 
+            updateCurrentAssetsDisplay();
+            updateExpensesDisplay(); 
+        });
+
+    </script>
+
+</body>
+</html>
